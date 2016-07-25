@@ -4,30 +4,30 @@ from oauth2client.client import GoogleCredentials
 
 
 def getMedian(alist):
-    """return median of alist"""
+    """return median of alist and length of list except null value"""
     if alist == []:
         return []
     blist = sorted(alist, key=lambda x: (x is None, x))
     k = -1
-    while blist[k] == None:
+    while blist[k] is None:
         k -= 1
     length = len(alist) + k + 1
     if length % 2 == 1:
         # length of list is odd so return middle element
-        return blist[int(((length + 1) / 2) - 1)]
+        return (blist[int(((length + 1) / 2) - 1)], length)
     else:
         # length of list is even so compute midpoint
         v1 = blist[int(length / 2)]
         v2 = blist[(int(length / 2) - 1)]
-        return (v1 + v2) / 2.0
+        return ((v1 + v2) / 2.0, length)
 
-def getAbsoluteStandardDeviation(alist, median):
+def getAbsoluteStandardDeviation(alist, median, length):
     """given alist and median return absolute standard deviation"""
     sum = 0
     for item in alist:
         if item != None:
             sum += abs(item - median)
-    return sum / len(alist)
+    return sum / length
 
 ##################################################
 ###
@@ -38,8 +38,8 @@ def normalizeColumn(service, col):
     """given a column number, normalize that column in self.data
     using the Modified Standard Score"""
 
-    median = getMedian(col)
-    asd = getAbsoluteStandardDeviation(col, median)
+    (median, length) = getMedian(col)
+    asd = getAbsoluteStandardDeviation(col, median, length)
     for i in range(len(col)):
         if col[i] != None:
             col[i] = (col[i] - median) / asd
@@ -92,5 +92,4 @@ def normalize():
             resultList[col] = normalizeColumn(bigquery_service, listColumn[col])
         else:
             resultList[col] = listColumn[col]
-
     return resultList
