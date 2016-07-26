@@ -1,5 +1,3 @@
-from googleapiclient.discovery import build
-from oauth2client.client import GoogleCredentials
 from Normalize import normalize
 
 frequencies = {}
@@ -66,10 +64,9 @@ def slopeOneRecommendations(data, i):
     recommendations = [(k, v / frequencies__[k])
                        for (k, v) in recommendations.items()]
     # finally sort and return
-    recommendations.sort(key=lambda artistTuple: artistTuple[1],
-                         reverse=True)
+    #recommendations.sort(key=lambda artistTuple: artistTuple[1], reverse=True)
     # I am only going to return the first 50 recommendations
-    return recommendations[:50]
+    return recommendations
 
 
 def predict():
@@ -81,7 +78,7 @@ def predict():
     #print(frequencies)
     for i in range(len(data['views'])):
         res = slopeOneRecommendations(data, i)
-        print (res)
-credentials = GoogleCredentials.get_application_default()
-bigquery_service = build('bigquery', 'v2', credentials=credentials)
-predict()
+        if res != []:
+            for (userItem, userRating) in res:
+                data[userItem][i] = userRating
+    return data
