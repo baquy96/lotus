@@ -21,6 +21,7 @@ def getMedian(alist):
         v2 = blist[(int(length / 2) - 1)]
         return ((v1 + v2) / 2.0, length)
 
+
 def getAbsoluteStandardDeviation(alist, median, length):
     """given alist and median return absolute standard deviation"""
     sum = 0
@@ -28,6 +29,7 @@ def getAbsoluteStandardDeviation(alist, median, length):
         if item != None:
             sum += abs(item - median)
     return sum / length
+
 
 ##################################################
 ###
@@ -45,10 +47,12 @@ def normalizeColumn(service, col):
             col[i] = (col[i] - median) / asd
     return col
 
+
 def normalize():
     credentials = GoogleCredentials.get_application_default()
     bigquery_service = build('bigquery', 'v2', credentials=credentials)
-    listColumn = {'customer_id': [], 'sku': [], 'sales': [], 'views': [], 'carts': [], 'sales_effective_rate': [], 'rating': [], 'comments': []}
+    listColumn = {'customer_id': [], 'sku': [], 'sales': [], 'views': [], 'carts': [], 'sales_effective_rate': [],
+                  'rating': [], 'comments': []}
     data = result(bigquery_service)
 
     for row in data['rows']:

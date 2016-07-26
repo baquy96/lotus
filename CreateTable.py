@@ -1,6 +1,7 @@
 from googleapiclient.discovery import build
 from oauth2client.client import GoogleCredentials
 
+
 def createTable(service):
     project_id = "598330041668"
     dataset_id = 'recommendation_001'
@@ -84,19 +85,19 @@ def createTable(service):
     # [END create new table]
     # print out the response
 
+
 def insertValues(service):
     project_id = "598330041668"
     dataset_id = "recommendation_001"
     table_id = "product_flat_index"
 
-
     # [START run_query]
 
     query = ('SELECT customer_id, sku, SUM(sales) AS sales, SUM(views) AS views,'
-          'SUM(carts) AS carts,  SUM(sales) / SUM(carts) AS sales_effective_rate,AVG(rating) AS rating,'
-          'SUM(comments) AS comments '
-          'FROM recommendation_001.user_input_product '
-          'GROUP BY customer_id, sku '
+             'SUM(carts) AS carts,  SUM(sales) / SUM(carts) AS sales_effective_rate,AVG(rating) AS rating,'
+             'SUM(comments) AS comments '
+             'FROM recommendation_001.user_input_product '
+             'GROUP BY customer_id, sku '
              )
 
     configuration = {
@@ -116,11 +117,12 @@ def insertValues(service):
             }
     }
 
-    response= service.jobs().insert(
+    response = service.jobs().insert(
         projectId=project_id,
         body=body
     ).execute()
     # [END run_query]
+
 
 def result(service):
     project_id = "598330041668"

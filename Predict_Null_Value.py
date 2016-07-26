@@ -3,8 +3,8 @@ from Normalize import normalize
 frequencies = {}
 deviations = {}
 
-def computeDeviations(data):
 
+def computeDeviations(data):
     for (item, rating) in data.items():
         if item != 'customer_id' and item != 'sku':
             frequencies.setdefault(item, {})
@@ -22,6 +22,7 @@ def computeDeviations(data):
         for item2 in ratings:
             ratings[item2] /= frequencies[item][item2]
 
+
 def nullValue(data, i):
     result = []
     if data['sales'][i] is None:
@@ -37,6 +38,7 @@ def nullValue(data, i):
     if data['rating'][i] is None:
         result += ['rating']
     return result
+
 
 def slopeOneRecommendations(data, i):
     # for every item and rating in the user's recommendations
@@ -60,11 +62,10 @@ def slopeOneRecommendations(data, i):
                         # keep a running sum of the frequency of diffitem
                         frequencies__[diffItem] += freq
 
-
     recommendations = [(k, v / frequencies__[k])
                        for (k, v) in recommendations.items()]
     # finally sort and return
-    #recommendations.sort(key=lambda artistTuple: artistTuple[1], reverse=True)
+    # recommendations.sort(key=lambda artistTuple: artistTuple[1], reverse=True)
     # I am only going to return the first 50 recommendations
     return recommendations
 
@@ -72,10 +73,10 @@ def slopeOneRecommendations(data, i):
 def predict():
     data = normalize()
     computeDeviations(data)
-    #print('Deviations: ')
-    #print(deviations)
-    #print('Frequencies: ')
-    #print(frequencies)
+    # print('Deviations: ')
+    # print(deviations)
+    # print('Frequencies: ')
+    # print(frequencies)
     for i in range(len(data['views'])):
         res = slopeOneRecommendations(data, i)
         if res != []:
