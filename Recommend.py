@@ -1,18 +1,18 @@
 from Predict_Null_Value import predict
+from math import sqrt
 
-
-def pearson(data, i1, i2):
+def pearson(rating1, rating2):
     sum_xy = 0
     sum_x = 0
     sum_y = 0
     sum_x2 = 0
     sum_y2 = 0
     n = 0
-    for userItem in data.keys():
-        if userItem != 'customer_id' and userItem != 'sku':
+    for key in rating1:
+        if key in rating2:
             n += 1
-            x = data[userItem][i1]
-            y = data[userItem][i2]
+            x = rating1[key]
+            y = rating2[key]
             sum_xy += x * y
             sum_x += x
             sum_y += y
@@ -29,43 +29,45 @@ def pearson(data, i1, i2):
         return (sum_xy - (sum_x * sum_y) / n) / denominator
 
 
-def computeNearestNeighbor(data, user):
+def computeNearestNeighbor(data, id_sku):
     """creates a sorted list of users based on their distance
     to username"""
     distances = []
-    for i in range(len(data['views'])):
-        for j in range(len(data['views'])):
-            if data['customer_id'][i] == user and data['customer_id'][j] != user:
-                distance = pearson(i, j)
-                distances.append((i, j, distance))
-        # sort based on distance -- closest first
-        distances.sort(key=lambda artistTuple: artistTuple[2],
-                       reverse=True)
+    for instance in data.keys():
+        if instance != id_sku:
+            distance = pearson(data[id_sku],
+                               data[instance])
+            distances.append((instance, distance))
+    # sort based on distance -- closest first
+    distances.sort(key=lambda artistTuple: artistTuple[1],
+                   reverse=True)
     return distances
 
 
-def recommend(data, user, num):
+def recommend(data, id, sku, k):
     """Give list of recommendations"""
     recommendations = {}
-    data = predict()
+    id_sku = (id, sku)
+
     # first get list of users  ordered by nearness
-    nearest = computeNearestNeighbor(data, user)
+    nearest = computeNearestNeighbor(data, id_sku)
+    print(nearest)
     #
     # now get the ratings for the user
     #
-    userRatings = data[user]
+    userRatings = data[id_sku]
     #
     # determine the total distance
     totalDistance = 0.0
-    for i in range(num):
-        totalDistance += nearest[i][2]
+    for i in range(k):
+        totalDistance += nearest[i][1]
     # now iterate through the k nearest neighbors
     # accumulating their ratings
-    for i in range(num):
+    for i in range(k):
         # compute slice of pie
-        weight = nearest[i][2] / totalDistance
+        weight = nearest[i][1] / totalDistance
         # get the name of the person
-        neighborIndex = nearest[i][1]
+        name = nearest[i][0]
         # get the ratings for this person
         neighborRatings = data[name]
         # get the name of the person
@@ -80,9 +82,14 @@ def recommend(data, user, num):
                                               neighborRatings[artist] * \
                                               weight
     # now make list from dictionary and only get the first n items
-    recommendations = list(recommendations.items())
-    recommendations = [(k, v) for (k, v) in recommendations]
+    recommendations = list(recommendations.items())[:k]
+    recommendations = [(k__, v)
+                       for (k__, v) in recommendations]
     # finally sort and return
     recommendations.sort(key=lambda artistTuple: artistTuple[1],
                          reverse=True)
     return recommendations
+
+data = predict()
+res = recommend(data, 'c05', 'a6', 5)
+print(res)
