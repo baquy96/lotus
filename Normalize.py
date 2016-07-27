@@ -36,64 +36,37 @@ def getAbsoluteStandardDeviation(alist, median, length):
 ### FINISH WRITING THIS METHOD
 
 
-def normalizeColumn(service, col):
+def normalizeColumn(data, columnName):
     """given a column number, normalize that column in self.data
     using the Modified Standard Score"""
-
+    col = [v[columnName] for v in data.values()]
     (median, length) = getMedian(col)
     asd = getAbsoluteStandardDeviation(col, median, length)
-    for i in range(len(col)):
-        if col[i] != None:
-            col[i] = (col[i] - median) / asd
-    return col
+    i = 0
+    for key in data.keys():
+        if col[i] is not None:
+            data[key][columnName] = (col[i] - median) / asd
+        i += 1
+    return data
 
 
 def normalize():
     credentials = GoogleCredentials.get_application_default()
     bigquery_service = build('bigquery', 'v2', credentials=credentials)
-    listColumn = {'customer_id': [], 'sku': [], 'sales': [], 'views': [], 'carts': [], 'sales_effective_rate': [],
-                  'rating': [], 'comments': []}
+    listColumn = {}
     data = result(bigquery_service)
-
+    columnName = ['sales', 'views', 'carts', 'sales_effective_rate', 'rating', 'comments']
     for row in data['rows']:
         col = []
         col += [field['v'] for field in row['f']]
-        listColumn['customer_id'] += [col[0]]
-        listColumn['sku'] += [col[1]]
-        if col[2] is not None:
-            listColumn['sales'] += [float(col[2])]
-        else:
-            listColumn['sales'] += [col[2]]
+        listColumn.setdefault((col[0], col[1]), {})
 
-        if col[3] is not None:
-            listColumn['views'] += [float(col[3])]
-        else:
-            listColumn['views'] += [col[3]]
+        for i in range(len(columnName)):
+            if col[i+2] is not None:
+                listColumn[(col[0], col[1])][columnName[i]] = float(col[i+2])
+            else:
+                listColumn[(col[0], col[1])][columnName[i]] = None
 
-        if col[4] is not None:
-            listColumn['carts'] += [float(col[4])]
-        else:
-            listColumn['carts'] += [col[4]]
-
-        if col[5] is not None:
-            listColumn['sales_effective_rate'] += [float(col[5])]
-        else:
-            listColumn['sales_effective_rate'] += [col[5]]
-
-        if col[6] is not None:
-            listColumn['rating'] += [float(col[6])]
-        else:
-            listColumn['rating'] += [col[6]]
-
-        if col[7] is not None:
-            listColumn['comments'] += [float(col[7])]
-        else:
-            listColumn['comments'] += [col[7]]
-
-    resultList = {}
-    for col in listColumn:
-        if col != 'customer_id' and col != 'sku':
-            resultList[col] = normalizeColumn(bigquery_service, listColumn[col])
-        else:
-            resultList[col] = listColumn[col]
-    return resultList
+    for name in columnName:
+        listColumn = normalizeColumn(listColumn, name)
+    return listColumn
