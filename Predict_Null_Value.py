@@ -1,5 +1,3 @@
-from Normalize import normalize
-
 frequencies = {}
 deviations = {}
 
@@ -56,13 +54,8 @@ def slopeOneRecommendations(userRatings):
     return recommendations
 
 
-def predict():
-    data = normalize()
+def predict(data):
     computeDeviations(data)
-    # print('Deviations: ')
-    # print(deviations)
-    # print('Frequencies: ')
-    # print(frequencies)
     for key in data.keys():
         res = slopeOneRecommendations(data[key])
         if res != []:

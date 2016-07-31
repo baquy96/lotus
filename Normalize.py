@@ -1,4 +1,3 @@
-from CreateTable import *
 from googleapiclient.discovery import build
 from oauth2client.client import GoogleCredentials
 
@@ -50,11 +49,10 @@ def normalizeColumn(data, columnName):
     return data
 
 
-def normalize():
+def normalize(data):
     credentials = GoogleCredentials.get_application_default()
     bigquery_service = build('bigquery', 'v2', credentials=credentials)
     listColumn = {}
-    data = result(bigquery_service)
     columnName = ['sales', 'views', 'carts', 'sales_effective_rate', 'rating', 'comments']
     for row in data['rows']:
         col = []

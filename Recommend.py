@@ -1,8 +1,12 @@
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from oauth2client.client import GoogleCredentials
-from apiclient.http import MediaFileUpload
+from googleapiclient.http import MediaFileUpload
+
+from CreateTable import create
+from Normalize import normalize
 from Predict_Null_Value import predict
+
 from math import sqrt
 import time
 
@@ -88,9 +92,8 @@ def recommend(data, user, k):
                     recommendations[artist] = neighborRatings[artist] * \
                                               weight
                 else:
-                    recommendations[artist] = recommendations[artist] + \
-                                              neighborRatings[artist] * \
-                                              weight
+                    recommendations[artist] += neighborRatings[artist] * \
+                                               weight
     # now make list from dictionary and only get the first k items
     recommendations = list(recommendations.items())[:k]
     recommendations = [(u, v)
@@ -101,8 +104,7 @@ def recommend(data, user, k):
     return recommendations
 
 
-def createData():
-    data = predict()
+def createData(data):
     res = {}
     # This factor is just random. It will change later.
     factor = {'sales': 1.6, 'views': 1.4, 'carts': 2, 'sales_effective_rate': 1, 'rating': 1.2, 'comments': 1}
@@ -123,9 +125,8 @@ def createData():
     return data
 
 
-def createTable(service):
+def createTable(service, dataset_id):
     project_id = "598330041668"
-    dataset_id = 'recommendation_001'
     table_id = 'product_recommended'
 
     tables = service.tables()
@@ -133,7 +134,8 @@ def createTable(service):
                  'datasetId': dataset_id,
                  'projectId': project_id}
     # [Delete table]
-    tables.delete(**table_ref).execute()
+    if doesTableExist(service, project_id, dataset_id, table_id):
+        tables.delete(**table_ref).execute()
 
     # [START create new table]
     request_body = {
@@ -171,9 +173,8 @@ def createTable(service):
     # print out the response
 
 
-def insertValues(service):
+def insertValues(service, dataset_id):
     project_id = "598330041668"
-    dataset_id = "recommendation_001"
     table_id = "product_recommended"
 
     # Load configuration with the destination specified.
@@ -199,7 +200,7 @@ def insertValues(service):
     start = time.time()
     job_id = 'job_%d' % start
     # Create the job.
-    result = service.jobs().insert(
+    response = service.jobs().insert(
         projectId=project_id,
         body={
             'jobReference': {
@@ -214,28 +215,48 @@ def insertValues(service):
     # [END run_query]
 
 
+def doesTableExist(service, project_id, dataset_id, table_id):
+    try:
+        service.tables().get(
+            projectId=project_id,
+            datasetId=dataset_id,
+            tableId=table_id).execute()
+        return True
+    except HttpError as err:
+        if err.resp.status != 404:
+            raise
+        return False
+
+
 def result():
-    data = createData()
-    k = 10
-    f = open('result.json', 'w')
-
-    for user in data.keys():
-        tmp = recommend(data, user, k)
-        if tmp != []:
-            res = {}
-            for (sku, distance) in tmp:
-                res['customer_id'] = user
-                res['sku'] = sku
-                res['distance'] = distance
-                f.write(str(res))
-                f.write('\n')
-    f.close()
-
+    project_id = "598330041668"
     credentials = GoogleCredentials.get_application_default()
     bigquery_service = build('bigquery', 'v2', credentials=credentials)
-
-    #createTable(bigquery_service)
-    insertValues(bigquery_service)
+    # This shopList will change after when we get this data from a database
+    shoplist = ['001', '002']
+    for name in shoplist:
+        dataset_id = 'recommendation_' + name
+        data = create(bigquery_service, dataset_id)
+        data = normalize(data)
+        data = predict(data)
+        data = createData(data)
+        # value k will change after
+        k = 10
+        f = open('result.json', 'w')
+        check = False
+        for user in data.keys():
+            tmp = recommend(data, user, k)
+            if tmp != []:
+                check = True
+                for (sku, distance) in tmp:
+                    res = '{\'customer_id\': \'' + user + '\', \'sku\': \'' + sku + '\', \'distance\': ' + str(
+                        distance) + '}'
+                    f.write(res)
+                    f.write('\n')
+        f.close()
+        if check:
+            createTable(bigquery_service, dataset_id)
+            insertValues(bigquery_service, dataset_id)
 
 
 result()

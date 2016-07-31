@@ -1,10 +1,5 @@
-from googleapiclient.discovery import build
-from oauth2client.client import GoogleCredentials
-
-
-def createTable(service):
+def createTable(service, dataset_id):
     project_id = "598330041668"
-    dataset_id = 'recommendation_001'
     table_id = 'product_flat_index'
 
     tables = service.tables()
@@ -12,8 +7,8 @@ def createTable(service):
                  'datasetId': dataset_id,
                  'projectId': project_id}
     # [Delete table]
-    tables.delete(**table_ref).execute()
-
+    if doesTableExist(service, project_id, dataset_id, table_id):
+        tables.delete(**table_ref).execute()
     # [START create new table]
     request_body = {
         "schema": {
@@ -86,9 +81,8 @@ def createTable(service):
     # print out the response
 
 
-def insertValues(service):
+def insertValues(service, dataset_id):
     project_id = "598330041668"
-    dataset_id = "recommendation_001"
     table_id = "product_flat_index"
 
     # [START run_query]
@@ -96,8 +90,8 @@ def insertValues(service):
     query = ('SELECT customer_id, sku, SUM(sales) AS sales, SUM(views) AS views,'
              'SUM(carts) AS carts,  SUM(sales) / SUM(carts) AS sales_effective_rate,AVG(rating) AS rating,'
              'SUM(comments) AS comments '
-             'FROM recommendation_001.user_input_product '
-             'GROUP BY customer_id, sku '
+             'FROM ' + dataset_id + '.user_input_product '
+                                    'GROUP BY customer_id, sku '
              )
 
     configuration = {
@@ -124,11 +118,26 @@ def insertValues(service):
     # [END run_query]
 
 
-def result(service):
+def doesTableExist(service, project_id, dataset_id, table_id):
+    try:
+        service.tables().get(
+            projectId=project_id,
+            datasetId=dataset_id,
+            tableId=table_id).execute()
+        return True
+    except HttpError as err:
+        if err.resp.status != 404:
+            raise
+        return False
+
+
+def create(service, dataset_id):
     project_id = "598330041668"
+    createTable(service, dataset_id)
+    insertValues(service, dataset_id)
     # [START run_query]
     query_request = service.jobs()
-    query = ('select * from recommendation_001.product_flat_index')
+    query = ('select * from ' + dataset_id + '.product_flat_index')
     query_data = {
         'query': query
     }
@@ -140,10 +149,3 @@ def result(service):
 
     # [START print_results]
     return query_response
-
-
-credentials = GoogleCredentials.get_application_default()
-bigquery_service = build('bigquery', 'v2', credentials=credentials)
-createTable(bigquery_service)
-insertValues(bigquery_service)
-result(bigquery_service)
